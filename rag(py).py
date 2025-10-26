@@ -18,7 +18,7 @@ Definindo a LLM
 """
 
 
-openrouterKey = getpass("Insira a sua chave API: ")
+openrouterKey = input("Insira a sua chave API: ")
 
 async def call_llm(prompt, model="openai/gpt-oss-20b:free", temperature=0):
     client = AsyncOpenAI(base_url="https://openrouter.ai/api/v1", api_key=openrouterKey)
@@ -52,7 +52,7 @@ if op == 0:
     result = pi_client.submit_document("./documentoUnido.pdf")
     doc_id = result["doc_id"]
 else:
-    doc_id = getpass("insira o ID do documento: ")
+    doc_id = input("insira o ID do documento: ")
 
 
 # Get OCR results in page format (default)
