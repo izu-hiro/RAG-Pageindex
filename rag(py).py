@@ -5,7 +5,9 @@ from pypdf import PdfWriter
 from os import listdir
 from os.path import isfile, join
 from time import sleep
-
+from ollama import chat
+from ollama import ChatResponse
+import re
 
 """rag.ipynb
 
@@ -18,16 +20,19 @@ Definindo a LLM
 """
 
 
-openrouterKey = input("Insira a sua chave API: ")
+def call_llm(input_content, system_prompt, deep_think = True, print_log = True):
+    response: ChatResponse = chat(model='deepseek-r1:1.5b', messages=[
+        {'role': 'system', 'content': system_prompt},
+        {'role': 'user', 'content': input_content}
+    ])
+    response_text = response['message']['content']
+    if print_log: print(response_text)
 
-async def call_llm(prompt, model="openai/gpt-oss-20b:free", temperature=0):
-    client = AsyncOpenAI(base_url="https://openrouter.ai/api/v1", api_key=openrouterKey)
-    response = await client.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=temperature
-    )
-    return response.choices[0].message.content.strip()
+    think_texts = re.findall(r'<think>(.*?)</think>', response_text, flags=re.DOTALL)
+    think_texts = "\n\n".join(think_texts).strip()
+    clean_response = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL).strip()
+
+    return clean_response if not deep_think else (clean_response, think_texts)
 
 #"""Conectando com o PageIndex"""
 
@@ -106,54 +111,44 @@ def retrieval(query):
             return retrieval_result.get('retrieved_nodes')
         sleep(1)
 
-async def executar_rag_stepback(original_query: str):
-    print("### INICIANDO DEMONSTRAÇÃO ###\n")
+print("### INICIANDO DEMONSTRAÇÃO ###\n")
 
-    # Pergunta original 
-    print(f"Pergunta Original Específica:\n{original_query}\n")
+# Pergunta original
+original_query = "Qual é a idade mínima para ingressar na Fatec Araraquara?"
 
-    # prompt pra llm
-    step_back_prompt = f"""
-    Dada a seguinte pergunta específica, formule uma pergunta "step-back" mais geral que capture os conceitos fundamentais necessários para respondê-la.
+# prompt pra llm
+step_back_prompt = 'Dada a seguinte pergunta específica, formule uma pergunta "step-back" mais geral que capture os conceitos fundamentais necessários para respondê-la.'
 
-    Pergunta Específica: "{original_query}"
+print("--- PASSO 1: Gerando a Pergunta ---")
 
-    Pergunta Step-Back Geral:
-    """
+step_back_question = call_llm(original_query, step_back_prompt)
+print(f"Pergunta Gerada: {step_back_question}\n")
 
-    print("--- PASSO 1: Gerando a Pergunta ---")
+print("--- PASSO 2: Utilizando o contexto já carregado ---")
+retrieved_context = retrieval(step_back_question)
+print("Contexto recuperado com sucesso.\n")
+print(f"O contexto recuperado foi:\n{retrieved_context}")
 
-    step_back_question = await call_llm(step_back_prompt)
-    print(f"Pergunta Gerada: {step_back_question}\n")
+# prompt final
+final_answer_prompt = f"""
+Você deve responder à "Pergunta Específica" usando o "Contexto" fornecido.
+Para te guiar, primeiro considere a "Pergunta Step-Back Geral" e como o contexto a responde.
+Use esse entendimento para construir uma resposta completa e precisa para a pergunta original.
+Responda somente aquilo que for passado no contexto oferecido. Se o contexto não for suficiente para responder a pergunta, apenas diga ao usuário que não foi possível responder aquela pergunta com as informações que você possui.
 
-    print("--- PASSO 2: Utilizando o contexto já carregado ---")
-    retrieved_context = retrieval(step_back_question)
-    print("Contexto recuperado com sucesso.\n")
-    print(f"O contexto recuperado foi:\n{retrieved_context}")
+Contexto:
+---
+{retrieved_context}
+---
+"""
+queries = f"""
+Pergunta Step-Back Geral: {step_back_question}
+Pergunta Específica: {original_query}
+"""
 
-    # prompt final 
-    final_answer_prompt = f"""
-    Você deve responder à "Pergunta Específica" usando o "Contexto" fornecido.
-    Para te guiar, primeiro considere a "Pergunta Step-Back Geral" e como o contexto a responde.
-    Use esse entendimento para construir uma resposta completa e precisa para a pergunta original.
-    Responda somente aquilo que for passado no contexto oferecido. Se o contexto não for suficiente para responder a pergunta, apenas diga ao usuário que não foi possível responder aquela pergunta com as informações que você possui.
+print("--- PASSO 3: Gerando a Resposta Final ---")
 
-    Contexto:
-    ---
-    {retrieved_context}
-    ---
-
-    Pergunta Step-Back Geral: {step_back_question}
-    Pergunta Específica: {original_query}
-
-    Resposta Final Detalhada:
-    """
-
-    print("--- PASSO 3: Gerando a Resposta Final ---")
-
-    final_answer = await call_llm(final_answer_prompt)
-    print("Resposta Gerada:\n")
-    print(final_answer)
-
-    return final_answer  
+final_answer = call_llm(queries, final_answer_prompt)
+print("Resposta Gerada:\n")
+print(final_answer)
     
