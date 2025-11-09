@@ -8,6 +8,7 @@ from os.path import isfile, join
 from time import sleep
 from ollama import chat
 from ollama import ChatResponse
+from docx import Document
 import re
 
 """rag.ipynb
@@ -132,7 +133,7 @@ multi_queries_text = call_llm(original_query, multi_query_prompt, deep_think=Fal
 if isinstance(multi_queries_text, tuple):
     multi_queries_text = multi_queries_text[0]
 
-multi_queries = [q.strip() for q in multi_queries_text.split("\n") if q.strip()]
+multi_queries = [q.strip() for q in multi_queries_text.splitlines() if q.strip()]
 
 print("Consultas Geradas:")
 for q in multi_queries:
@@ -148,43 +149,82 @@ for q in multi_queries:
 unique_context = list({str(node): node for node in all_results}.values())
 print(f"Foram recuperados {len(unique_context)} trechos únicos do documento.")
 
+print("PASSO 2.1: Carregando legislações fixas (ETP e TR)")
+def ler_docx_para_texto(caminho):
+    try:
+        doc = Document(caminho)
+        partes = []
+
+        # le paragrafo
+        for p in doc.paragraphs:
+            if p.text.strip():
+                partes.append(p.text.strip())
+
+        # le tabelas 
+        for table in doc.tables:
+            for row in table.rows:
+                linha = " | ".join([cell.text.strip() for cell in row.cells if cell.text.strip()])
+                if linha:
+                    partes.append(linha)
+
+        texto_final = "\n".join(partes)
+        return limpar_texto(texto_final)
+
+    except Exception as e:
+        print(f"Erro ao ler {caminho}: {e}")
+        return f"(Não foi possível ler o arquivo {caminho})"
+
+# Carrega os dois cocx
+lei1 = ler_docx_para_texto("MODELO_DE_ESTUDO_TECNICO_PRELIMINAR_GERAL.docx")
+lei2 = ler_docx_para_texto("MODELO_DE_TERMO_DE_REFERENCIA_GERAL.docx")
+
+# Combina o contexto PageIndex com as legislações 
+context = f"""
+### Trechos recuperados dos documentos técnicos:
+{unique_context}
+
+---
+
+### Modelos legais aplicáveis (Lei 14.133/2021):
+#### Estudo Técnico Preliminar (ETP)
+{lei1}
+
+#### Termo de Referência (TR)
+{lei2}
+---
+"""
+
 
 # Prompt final 
 final_answer_prompt = f"""
-##  OBJETIVO
-Sua tarefa é responder à "PERGUNTA ESPECÍFICA" usando *exclusivamente* o "CONTEXTO" e seguir o formato de saída.
+Você é um assistente técnico especializado em análise documental para licitações,
+contratações públicas e serviços administrativos.
 
-##  PROCESSO DE RACIOCÍNIO E FORMATAÇÃO DE SAÍDA
+Sua função é interpretar o conteúdo retornado pela busca e responder à consulta abaixo
+de forma técnica, objetiva e fundamentada.
 
-Você deve seguir rigorosamente o formato de 3 etapas abaixo:
+Regras:
+1. Responda apenas com base nas informações do documento recuperado.
+2. Se o contexto não contiver resposta suficiente, informe isso claramente
+3. Use linguagem formal e precisa, como em um parecer técnico.
+4. Não invente nem adicione informações fora do contexto retornado.
 
-**1. Resumo das Reformulações (Multi-Query):**
-[Resuma brevemente o que as reformulações ajudaram a entender sobre o tema.]
+### Contexto dos documentos:
+{context}
 
-**2. Raciocínio para a Pergunta Específica:**
-[Explique como o contexto permite responder à pergunta principal.]
+### Consulta:
+{query}
 
-**3. Resposta Final:**
-[Forneça a resposta completa e precisa para a "PERGUNTA ESPECÍFICA".]
-
-##  REGRAS DE SAÍDA ESTRITAS
-1.  **Adesão Total ao Contexto:** Todas as três etapas da sua resposta devem ser 100% derivadas do "CONTEXTO".
-2.  **Contexto Insuficiente:** Se o "CONTEXTO" não for suficiente, pule a formatação acima e responda apenas com: "Não foi possível responder a esta pergunta com as informações fornecidas."
-
-Contexto:
----
+### Resposta:
+"""
 {unique_context}
 ---
 """
 
 queries = f"""
-Reformulações:
 {multi_queries}
 
-Pergunta Específica:
 {original_query}
-"""
-
 
 print(" PASSO 3: Gerando a Resposta Final ")
 
