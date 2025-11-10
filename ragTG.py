@@ -62,7 +62,7 @@ for documento in documentos:
             data = json.load(f)
             arvores.append(data)
     except Exception as e:
-        print('Erro: ' + e)
+        print(f'Erro: {e}')
 
 lei = ''
 with open('L14133.pdf', 'rb') as file:
@@ -81,7 +81,7 @@ def retrieval(query, tree):
 
     search_prompt = f"""
     You are given a question and a tree structure of a document.
-    Each node contains a node id, node title, and a corresponding summary.
+    Each node contains: node_id, node title, and a summary.
     Your task is to find all nodes that are likely to contain the answer to the question.
 
     Question: {query}
@@ -92,7 +92,7 @@ def retrieval(query, tree):
     Please reply in the following JSON format:
     {{
         "thinking": "<Your thinking process on which nodes are relevant to the question>",
-        "node_list": ["node_id_1", "node_id_2", ..., "node_id_n"]
+        "node_list": ["node_id", "node_id", ..."]
     }}
     Directly return the final JSON structure. Do not output anything else.
     """
