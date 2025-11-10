@@ -5,8 +5,7 @@ from ollama import ChatResponse
 import re
 import json
 import pageindex.utils as utils
-from spire.doc import *
-from spire.doc.common import *
+from docx import Document
 import PyPDF2
 
 """rag.ipynb
@@ -18,6 +17,13 @@ Original file is located at
 
 Definindo a LLM
 """
+
+def getText(filename):
+    doc = Document(filename)
+    fullText = []
+    for para in doc.paragraphs:
+        fullText.append(para.text)
+    return '\n'.join(fullText)
 
 # Função retirada do próprio repositório do pageIndex
 def remove_fields(data, fields=['text']):
@@ -153,13 +159,9 @@ for node_list in node_lists:
 print("Contexto recuperado com sucesso.\n")
 print(f"O contexto recuperado foi:\n{retrieved_context}")
 
-documento = Document()
-documento.LoadFromFile('MODELO_DE_ESTUDO_TECNICO_PRELIMINAR_GERAL.docx')
-etp = documento.GetText()
+etp = getText('MODELO_DE_ESTUDO_TECNICO_PRELIMINAR_GERAL.docx')
 
-documento = Document()
-documento.LoadFromFile('MODELO_DE_ESTUDO_TECNICO_PRELIMINAR_GERAL.docx')
-lei = documento.GetText()
+lei = getText('MODELO_DE_ESTUDO_TECNICO_PRELIMINAR_GERAL.docx')
 
 
 # prompt final
