@@ -8,7 +8,7 @@ from os.path import isfile, join
 from time import sleep
 from ollama import chat
 from ollama import ChatResponse
-from docx import Document
+from docx  import Document
 import re
 
 """rag.ipynb
@@ -42,7 +42,7 @@ pi_client = PageIndexClient(api_key=input("Insira a chave API do Page Index: "))
 
 #"""Contexto utilizado na geração da resposta"""
 
-documentos = ['documentos/'+f for f in listdir('documentos') if isfile(join('documentos', f))]
+documentos = ['documentos/'+f for f in listdir('Documents') if isfile(join('documentos', f))]
 
 merger = PdfWriter()
 for documento in documentos:
@@ -150,7 +150,7 @@ unique_context = list({str(node): node for node in all_results}.values())
 print(f"Foram recuperados {len(unique_context)} trechos únicos do documento.")
 
 print("PASSO 2.1: Carregando legislações fixas (ETP e TR)")
-def ler_docx_para_texto(caminho):
+def ler_docx_para_texto(caminho, limpar_texto):
     try:
         doc = Document(caminho)
         partes = []
@@ -174,9 +174,11 @@ def ler_docx_para_texto(caminho):
         print(f"Erro ao ler {caminho}: {e}")
         return f"(Não foi possível ler o arquivo {caminho})"
 
-# Carrega os dois cocx
-lei1 = ler_docx_para_texto("MODELO_DE_ESTUDO_TECNICO_PRELIMINAR_GERAL.docx")
-lei2 = ler_docx_para_texto("MODELO_DE_TERMO_DE_REFERENCIA_GERAL.docx")
+def sem_limpeza(texto):
+   return texto
+
+lei1 = ler_docx_para_texto("MODELO_DE_ESTUDO_TECNICO_PRELIMINAR_GERAL.docx", sem_limpeza)
+lei2 = ler_docx_para_texto("MODELO_DE_TERMO_DE_REFERENCIA_GERAL.docx", sem_limpeza)
 
 # Combina o contexto PageIndex com as legislações 
 context = f"""
@@ -194,8 +196,8 @@ context = f"""
 ---
 """
 
-
 # Prompt final 
+
 final_answer_prompt = f"""
 Você é um assistente técnico especializado em análise documental para licitações,
 contratações públicas e serviços administrativos.
@@ -212,22 +214,16 @@ Regras:
 ### Contexto dos documentos:
 {context}
 
-### Consulta:
-{query}
+---
+### Consulta do Usuário:
+{original_query}
+---
 
 ### Resposta:
 """
-{unique_context}
----
-"""
-
-queries = f"""
-{multi_queries}
-
-{original_query}
 
 print(" PASSO 3: Gerando a Resposta Final ")
 
-final_answer = call_llm(queries, final_answer_prompt)
+final_answer = call_llm(original_query, final_answer_prompt)
 print("Resposta Gerada:\n")
 print(final_answer)
