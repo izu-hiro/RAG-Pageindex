@@ -92,7 +92,7 @@ def retrieval(query, tree):
     Please reply in the following JSON format:
     {{
         "thinking": "<Your thinking process on which nodes are relevant to the question>",
-        "node_list": ["node_id", "node_id", ..."]
+        "node_list": [ node_id, node_id, ...]
     }}
     Directly return the final JSON structure. Do not output anything else.
     """
