@@ -127,15 +127,17 @@ def multiQuery(queries, arvores):
 print("### INICIANDO DEMONSTRAÇÃO ###\n")
 
 # Pergunta original
-original_query = """Estou te fornecendo três propostas de prestação de serviço, extrais as informações relevantes
-e monte um estudo """
+original_query = """Estou te fornecendo três propostas de prestação de serviço, extraia todas as informações relevantes
+ em um momento de análise de propostas e gere um estudo técnico preliminar com base nisso"""
 
 # prompt pra llm
 system_prompt_multi_query = '''
-Você é um assistente especializado em reformular perguntas para recuperação de informações.
+Você é um assistente especializado em reformular perguntas para recuperação de informações em documentos.
 Dada uma pergunta original, gere de 3 a 5 variações semanticamente diferentes,
-mantendo o mesmo significado central. Essas variações devem ajudar a encontrar
-respostas relevantes para responder a questão inicial gerada pelo usuário.
+mantendo o mesmo significado central. Essas variações de perguntas serão utilizadas para extrair dados de
+documentos a fim de responder a questão inicial gerada pelo usuário.
+Gere perguntas que serão suficientes para extrair as informações necessárias de documentos que posteriormente
+serão fornecidos.
 Gere as reformulações separando-as com quebras de linha. Não escreva nada além das reformulações.
 '''
 
