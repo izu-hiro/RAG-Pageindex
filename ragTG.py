@@ -84,7 +84,8 @@ def retrieval(query, tree):
     Each node contains: node_id, node title, and a summary.
     Your task is to find all nodes that are likely to contain the answer to the question.
 
-    Question: {query}
+    Question:
+    {query}
 
     Document tree structure:
     {json.dumps(tree_without_text, indent=2)}
