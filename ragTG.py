@@ -137,7 +137,10 @@ Dada uma pergunta original, gere de 3 a 5 variações semanticamente diferentes,
 mantendo o mesmo significado central. Essas variações de perguntas serão utilizadas para extrair dados de
 documentos a fim de responder a questão inicial gerada pelo usuário.
 Gere perguntas que serão suficientes para extrair as informações necessárias de documentos que posteriormente
-serão fornecidos.
+serão fornecidos. Gere as novas perguntas considerando que cada uma será lida uma vez para cada documento, ou seja,
+não faça perguntas gerais para os documentos mas sim perguntas específicas.
+Tente Formular perguntas que extraiam de forma específica e direta aquilo que deve ser analisado naquele
+documento específico
 Gere as reformulações separando-as com quebras de linha. Não escreva nada além das reformulações.
 '''
 
